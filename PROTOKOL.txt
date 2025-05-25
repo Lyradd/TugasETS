@@ -1,0 +1,68 @@
+FILE SERVER  
+TUJUAN: Melayani client dalam request file server sesuai protokol yang diimplementasikan pada file_protocol.py
+
+ATURAN PROTOKOL:
+- Client mengirimkan request dalam bentuk string.
+- Format string: REQUEST spasi PARAMETER
+- PARAMETER dapat terdiri dari satu atau lebih, dipisahkan spasi.
+
+REQUEST YANG DILAYANI:
+- Jika request tidak dikenali:
+  - status: ERROR
+  - data: request tidak dikenali
+- Semua response diberikan dalam format JSON dan diakhiri dengan "\r\n\r\n" (ascii #13#10#13#10).
+
+LIST
+* TUJUAN: Mendapatkan daftar seluruh file yang dilayani oleh file server.
+* PARAMETER: Tidak ada.
+* RESPONSE:
+  - BERHASIL:
+    - status: OK
+    - data: list file (array nama file)
+  - GAGAL:
+    - status: ERROR
+    - data: pesan kesalahan
+
+GET
+* TUJUAN: Mendapatkan isi file dengan menyebutkan nama file.
+* PARAMETER:
+  - PARAMETER1: nama file
+* RESPONSE:
+  - BERHASIL:
+    - status: OK
+    - data_namafile: nama file yang diminta
+    - data_file: isi file dalam bentuk base64
+  - GAGAL:
+    - status: ERROR
+    - data: pesan kesalahan
+
+UPLOAD
+* TUJUAN: Mengunggah file ke server.
+* PARAMETER:
+  - PARAMETER1: nama file
+  - PARAMETER2: isi file dalam bentuk base64
+* RESPONSE:
+  - BERHASIL:
+    - status: OK
+    - data: pesan sukses
+  - GAGAL:
+    - status: ERROR
+    - data: pesan kesalahan
+
+DELETE
+* TUJUAN: Menghapus file di server.
+* PARAMETER:
+  - PARAMETER1: nama file yang akan dihapus
+* RESPONSE:
+  - BERHASIL:
+    - status: OK
+    - data: pesan sukses
+  - GAGAL:
+    - status: ERROR
+    - data: pesan kesalahan
+
+Catatan:
+- Semua response dikirim dalam format JSON dan diakhiri dengan "\r\n\r\n".
+- Untuk operasi GET dan UPLOAD, isi file dikirim/diproses dalam bentuk base64.
+- Pastikan nama file valid dan tidak mengandung karakter ilegal.
+
