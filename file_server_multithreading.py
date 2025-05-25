@@ -1,47 +1,52 @@
 from socket import *
 import socket
+import threading
 import logging
-import time
-import sys
 from concurrent.futures import ThreadPoolExecutor
-
 from file_protocol import FileProtocol
+
 fp = FileProtocol()
 
-def process_client(conn, addr):
-    buffer = ""
+def handle_client(conn):
+    data_buffer = b""
     while True:
-        data = conn.recv(65536)
-        if data:
-            buffer += data.decode()
-            if "\r\n\r\n" in buffer:
+        chunk = conn.recv(65536)
+        if chunk:
+            data_buffer += chunk
+            if b"\r\n\r\n" in data_buffer:
                 break
         else:
             break
-    if buffer:
-        reply = fp.proses_string(buffer) + "\r\n\r\n"
-        conn.sendall(reply.encode())
+    if data_buffer:
+        request = data_buffer.decode()
+        response = fp.proses_string(request) + "\r\n\r\n"
+        conn.sendall(response.encode())
     conn.close()
 
-class Server:
-    def __init__(self, ipaddress='0.0.0.0', port=8889, max_workers=10):
-        self.ipinfo = (ipaddress, port)
-        self.my_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+class ThreadedServer(threading.Thread):
+    def __init__(self, host='0.0.0.0', port=8889, max_workers=5):
+        super().__init__()
+        self.address = (host, port)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.executor = ThreadPoolExecutor(max_workers=max_workers)
 
     def run(self):
-        logging.warning(f"server berjalan di ip address {self.ipinfo}")
-        self.my_socket.bind(self.ipinfo)
-        self.my_socket.listen(5)
-        while True:
-            conn, client_addr = self.my_socket.accept()
-            logging.warning(f"connection from {client_addr}")
-            self.executor.submit(process_client, conn, client_addr)
+        logging.warning(f"server berjalan di ip address {self.address}")
+        self.sock.bind(self.address)
+        self.sock.listen(100)
+        try:
+            while True:
+                conn, client_addr = self.sock.accept()
+                logging.warning(f"connection from {client_addr}")
+                self.executor.submit(handle_client, conn)
+        except Exception as e:
+            logging.warning(f"server stopped: {e}")
 
 def main():
-    svr = Server()
-    svr.run()
+    server = ThreadedServer()
+    server.start()
+    server.join()
 
 if __name__ == "__main__":
     main()
