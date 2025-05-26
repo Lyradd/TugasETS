@@ -166,11 +166,19 @@ if __name__ == '__main__':
         worker_success = 0
         worker_fail = 0
         total_bytes = 0
+        durations = []
+        throughputs = []
         with concurrent.futures.ProcessPoolExecutor(max_workers=nworker) as executor:
             futures = [executor.submit(worker, i+1) for i in range(nworker)]
             for future in concurrent.futures.as_completed(futures):
+                t0 = time.perf_counter()
                 try:
                     res = future.result()
+                    t1 = time.perf_counter()
+                    duration = t1 - t0
+                    durations.append(duration)
+                    throughput = res['bytes'] / duration if duration > 0 and res['success'] else 0
+                    throughputs.append(throughput)
                     if res['success']:
                         worker_success += 1
                         total_bytes += res['bytes']
@@ -183,9 +191,8 @@ if __name__ == '__main__':
                     print(f"Worker failed with exception: {e}")
         end_all = time.perf_counter()
         total_time = end_all - start_all
-        throughput = total_bytes / total_time if total_time > 0 else 0
-        avg_time = total_time / nworker if nworker > 0 else 0
-        avg_tp = throughput / nworker if nworker > 0 else 0
+        avg_time = sum(durations) / nworker if nworker > 0 else 0
+        avg_tp = sum(throughputs) / nworker if nworker > 0 else 0
         print(f"{no:<3}| {op:<8}| {label:<12}| {nworker:<6}| {avg_time:<12.4f}| {avg_tp:<14.2f}| {worker_success:<6}| {worker_fail:<5}")
         no += 1
     except Exception as e:
